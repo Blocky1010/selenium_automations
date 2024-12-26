@@ -9,18 +9,16 @@ import json
 
 chrome_options = Options()
 
-# Chemin vers le profil Chrome sur Mac (ajusté selon votre structure)
+
 user_home = os.path.expanduser('~')
 chrome_options.add_argument(f'--user-data-dir={user_home}/Library/Application Support/Google/Chrome')
-chrome_options.add_argument('--profile-directory=Default')  # ou 'System Profile' selon celui que vous utilisez
-
-# Options supplémentaires pour éviter les erreurs
+chrome_options.add_argument('--profile-directory=Default')
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
 driver = webdriver.Chrome(options=chrome_options)
-print("Chrome démarré avec succès!")
+print("Chrome démarré")
 
 liste_competences = [["1","1"],["2","43"],["3","78"], ["4","106"]]
 
@@ -33,57 +31,47 @@ def repeater(path, action, keys=None):
 
 def get_question_type(driver):
     try:
-        # Trouver l'élément qst-grid
         qst_grid = driver.find_element(By.CSS_SELECTOR, '.qst_grid')
-        
-        # Compter le nombre de divs avec la classe 'questionnaire_test_reponse'
         reponses = qst_grid.find_elements(By.CSS_SELECTOR, '.questionnaire_test_reponse')
-        
-        # Mettre à jour type_questions selon le nombre de réponses
         type_questions = len(reponses)
-        
-        print(f"Nombre de réponses trouvées : {type_questions}")
         return type_questions
         
     except Exception as e:
-        print(f"Erreur lors de la détection du type de question : {e}")
         return 0
 def element_exists_and_click(driver, selector, timeout=2):
 
     try:
         element = driver.find_element(By.CSS_SELECTOR, selector)
         if element.is_displayed():
-            print(f"Élément '{selector}' trouvé et visible")
             element.click()
             return True
         else:
-            print(f"Élément '{selector}' trouvé mais non visible")
             return False
     except:
-        print(f"Élément '{selector}' non trouvé")
         return False
 
 try:
     #Connexion
     # driver.get('https://www.stych.fr/elearning/formation/conduite/formation')
-    # repeater('/html/body/div[2]/div[1]/div/form/div[2]/input', 1, "YOUR EMAIL ADRESS")
-    # repeater('/html/body/div[2]/div[1]/div/form/div[3]/div[1]/input', 1, "YOURPASSWORD")
+    # repeater('/html/body/div[2]/div[1]/div/form/div[2]/input', 1, "YOUREMAIL")
+    # repeater('/html/body/div[2]/div[1]/div/form/div[3]/div[1]/input', 1, "YOURPASSW")
     # repeater('/html/body/div[2]/div[1]/div/form/div[3]/div[3]/div[2]/div/label', 0)
     # repeater('/html/body/div[2]/div[1]/div/form/div[3]/input', 0)
 
     cookie_counter = 0
     cookie_counter_1 = 0
+
+    driver.get("https://www.stych.fr/connexion")
+    time.sleep(30)
+
     #compétences ( Totale = 4 )
     for z in range(4):
-        driver.get("https://www.stych.fr/elearning/formation/conduite/formation")
+        driver.get("https://www.stych.fr/elearning/formation/conduite/")
 
         cookies = driver.get_cookies()
         phpsessid_cookie = next((cookie for cookie in cookies if cookie['name'] == 'PHPSESSID'), None)
         if phpsessid_cookie:
             print(f"Cookie: {phpsessid_cookie['name']}, Value: {phpsessid_cookie['value']}")
-
-
-        print(phpsessid_cookie['value'])
 
         # aller sur x compétence ( Totale = 4 )
         driver.get(f"https://www.stych.fr/elearning/formation/conduite/topics/{liste_competences[z][1]}")
@@ -100,7 +88,7 @@ try:
             url = link.get_attribute('href')
             text = link.text
             result.append(url)
-        print(result)
+        # print(result)
 
         #sous-compétences
         for i in range(count):
@@ -115,10 +103,16 @@ try:
             if len(videos) != 0:
                 for a in range(len(videos)):
                     driver.get(result[i])
-                    #clic dans la vidéo
                     time.sleep(2)
-                    repeater(f'/html/body/div[1]/div/div/main/div/div[2]/div/div/div[1]/div[2]/div/div/div/div[2]/div[{a+1}]/div[2]/a',0)
 
+                    cookies = driver.get_cookies()
+                    phpsessid_cookie = next((cookie for cookie in cookies if cookie['name'] == 'PHPSESSID'), None)
+                    if phpsessid_cookie:
+                        print(f"Cookie: {phpsessid_cookie['name']}, Value: {phpsessid_cookie['value']}")
+                    
+                    #clic dans la vidéo
+
+                    repeater(f'/html/body/div[1]/div/div/main/div/div[2]/div/div/div[1]/div[2]/div/div/div/div[2]/div[{a+1}]/div[2]/a',0)
                     time.sleep(2)
 
                     play = driver.find_element(By.CSS_SELECTOR, '.plyr__control.plyr__control--overlaid')
@@ -137,10 +131,10 @@ try:
                     driver.execute_script(f"arguments[0].value = 99", progress_bar)
                     driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", progress_bar)
 
-                    time.sleep(3)
+                    time.sleep(5)
 
                     if element_exists_and_click(driver, ".btn.btn-secondary.btn-do-video-qcm.px-lg-5.mb-5"):
-                        print("Bouton trouvé et cliqué, on continue")
+                        # print("Bouton trouvé et cliqué, on continue")
 
                         #demarrer le test
                         repeater('/html/body/div[3]/div/div/div/div/div[1]/div[2]/div[2]', 0)
@@ -149,7 +143,7 @@ try:
                         time.sleep(2)
                         
                         id_qst = driver.execute_script("return id_qst;")
-                        print(f"ID Question: {id_qst}")
+                        # print(f"ID Question: {id_qst}")
 
                         final_list = []
 
@@ -205,34 +199,45 @@ try:
                                 print(f"Request failed with status code: {response.status_code}")
                                 print("Response content:", response.text)
 
-                        print("\nListe finale avec réponses combinées:")
-                        print(final_list)
+                        # print("\nListe finale avec réponses combinées:")
+                        # print(final_list)
 
                         xpaths = {
                             "4_choices": [
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[1]/div/div/div[1]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[1]/div/div/div[2]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[2]/div/div/div[1]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[2]/div/div/div[2]'
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[2]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[3]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[4]'
+                            ],
+                            "4_choices_2x2": [
+                                '//*[@id="QST"]/div/div/div[2]/center[1]/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center[1]/div/div/div[2]',
+                                '//*[@id="QST"]/div/div/div[2]/center[2]/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center[2]/div/div/div[2]'
                             ],
                             "3_choices": [
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[1]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[2]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[3]'
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[2]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[3]'
                             ],
                             "2_choices": [
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[1]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[2]'
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[2]'
                             ]
                         }
                         for c in range(5):
                             reponses = final_list[c]
                             num_choices = len(reponses)
-                            print(f"\nQuestion {c + 1} avec {num_choices} choix:")
+                            # print(f"\nQuestion {c + 1} avec {num_choices} choix:")
 
                             # Sélectionner la liste de XPaths appropriée
                             if num_choices == 4:
-                                current_xpaths = xpaths["4_choices"]
+                                # Vérifier si c'est un layout 2x2 en essayant de trouver un élément spécifique
+                                try:
+                                    driver.find_element(By.XPATH, '//*[@id="QST"]/div/div/div[2]/center[2]')
+                                    current_xpaths = xpaths["4_choices_2x2"]
+                                except:
+                                    current_xpaths = xpaths["4_choices"]
                             elif num_choices == 3:
                                 current_xpaths = xpaths["3_choices"]
                             else:
@@ -242,14 +247,14 @@ try:
                             correct_indices = [i for i, reponse in enumerate(reponses) if reponse == '1']
                             
                             if correct_indices:
-                                print(f"Les bonnes réponses sont en position(s): {[i + 1 for i in correct_indices]}")
+                                # print(f"Les bonnes réponses sont en position(s): {[i + 1 for i in correct_indices]}")
                                 
                                 # Cliquer sur chaque bonne réponse
                                 for correct_index in correct_indices:
                                     try:
                                         element = driver.find_element(By.XPATH, current_xpaths[correct_index])
                                         element.click()
-                                        print(f"Cliqué sur: {current_xpaths[correct_index]}")
+                                        # print(f"Cliqué sur: {current_xpaths[correct_index]}")
                                         time.sleep(0.5)  # Petit délai entre les clics multiples
                                     except Exception as e:
                                         print(f"Erreur lors du clic sur la position {correct_index + 1}: {e}")
@@ -267,58 +272,86 @@ try:
                         time.sleep(2) 
                     else:
                         time.sleep(2)
-                        print('fermeture')
                         close_button = driver.find_element(By.CLASS_NAME, 'vbox-close')
                         close_button.click()
-                        print('fermé !!!!')
             else:
                 print("Pas de video, passage aux fiches...")
 
             if len(fiches) != 0:
-
                 time.sleep(2)
 
                 for g in range(len(fiches)):
-
                     driver.get(result[i])
+                    time.sleep(2)
+                    cookies = driver.get_cookies()
+                    phpsessid_cookie = next((cookie for cookie in cookies if cookie['name'] == 'PHPSESSID'), None)
+                    if phpsessid_cookie:
+                        print(f"Cookie: {phpsessid_cookie['name']}, Value: {phpsessid_cookie['value']}")
+
 
                     first_fiche = driver.find_element(By.CSS_SELECTOR, f".list-item:nth-child({g+1}) .item-title > a[href*='fiche-cours']")
+                    fiche_url = first_fiche.get_attribute('href')
                     first_fiche.click()
 
-                    time.sleep(5)
+                    time.sleep(3)
 
-                    script = """
-                    dureeConsultation = 120;
-                    scroll_end = 1;
+                    duree_totale = 420
+                    duree_actuelle = 0
+                    
+                    while duree_actuelle < duree_totale:
+                        try:
+                            # Simuler le scroll
+                            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                            
+                            # Préparer la requête POST pour enregistrer la durée
+                            headers = {
+                                'accept': '*/*',
+                                'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
+                                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                'origin': 'https://www.stych.fr',
+                                'referer': fiche_url,
+                                'x-requested-with': 'XMLHttpRequest'
+                            }
+                            
+                            data = {
+                                'action': 'recordDureeConsultation',
+                                'dureeConsultation': str(duree_actuelle + 5),
+                            }
+                            
+                            # Envoyer la requête
+                            response = requests.post(
+                                fiche_url,
+                                headers=headers,
+                                cookies={'PHPSESSID': phpsessid_cookie['value']},
+                                data=data
+                            )
+                            
+                            duree_actuelle += 5
+                            time.sleep(0.1)  # Attendre 5 secondes avant la prochaine requête
+                            
+                        except Exception as e:
+                            print(f"Erreur lors de l'enregistrement de la durée : {e}")
+                            break
 
-                    // Simuler le scroll jusqu'en bas
-                    window.scrollTo(0, document.body.scrollHeight);
-
-                    // Forcer l'appel à recordScrollEnd
-                    $.ajax({
-                        url: "/plateforme/fiche-cours/837/2",
-                        method: 'POST',
-                        data: {
-                            'action': 'recordScrollEnd'
+                    # Une fois la durée atteinte, enregistrer que l'utilisateur a atteint la fin
+                    try:
+                        data_end = {
+                            'action': 'recordScrollEnd',
                         }
-                    });
+                        
+                        response_end = requests.post(
+                            fiche_url,
+                            headers=headers,
+                            cookies={'PHPSESSID': phpsessid_cookie['value']},
+                            data=data_end
+                        )
+                    except Exception as e:
+                        print(f"Erreur lors de l'enregistrement de la fin du scroll : {e}")
 
-                    // Forcer l'appel à recordDureeConsultation
-                    $.ajax({
-                        url: "/plateforme/fiche-cours/386/2",
-                        method: 'POST',
-                        data: {
-                            'action': 'recordDureeConsultation',
-                            'dureeConsultation': 120
-                        }
-                    });
-
-                    // Mettre à jour visuellement la barre
-                    $('.progress-bar').css({width: '100%'});
-                    """
-                    driver.execute_script(script)
-
-                    time.sleep(2)
+                    # Mettre à jour visuellement la barre de progression
+                    driver.execute_script("$('.progress-bar').css({width: '100%'});")
+                    
+                    # time.sleep(2)
 
                     if element_exists_and_click(driver, ".btn.btn-secondary"):
                         time.sleep(2)
@@ -329,7 +362,7 @@ try:
                         time.sleep(3)
                         
                         id_qst = driver.execute_script("return id_qst;")
-                        print(f"ID Question: {id_qst}")
+                        # print(f"ID Question: {id_qst}")
 
                         final_list = []
 
@@ -385,34 +418,45 @@ try:
                                 print(f"Request failed with status code: {response.status_code}")
                                 print("Response content:", response.text)
 
-                        print("\nListe finale avec réponses combinées:")
-                        print(final_list)
+                        # print("\nListe finale avec réponses combinées:")
+                        # print(final_list)
 
                         xpaths = {
                             "4_choices": [
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[1]/div/div/div[1]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[1]/div/div/div[2]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[2]/div/div/div[1]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[2]/div/div/div[2]'
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[2]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[3]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[4]'
+                            ],
+                            "4_choices_2x2": [
+                                '//*[@id="QST"]/div/div/div[2]/center[1]/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center[1]/div/div/div[2]',
+                                '//*[@id="QST"]/div/div/div[2]/center[2]/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center[2]/div/div/div[2]'
                             ],
                             "3_choices": [
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[1]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[2]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[3]'
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[2]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[3]'
                             ],
                             "2_choices": [
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[1]',
-                                '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[2]'
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[1]',
+                                '//*[@id="QST"]/div/div/div[2]/center/div/div/div[2]'
                             ]
                         }
                         for c in range(5):
                             reponses = final_list[c]
                             num_choices = len(reponses)
-                            print(f"\nQuestion {c + 1} avec {num_choices} choix:")
+                            # print(f"\nQuestion {c + 1} avec {num_choices} choix:")
 
                             # Sélectionner la liste de XPaths appropriée
                             if num_choices == 4:
-                                current_xpaths = xpaths["4_choices"]
+                                # Vérifier si c'est un layout 2x2 en essayant de trouver un élément spécifique
+                                try:
+                                    driver.find_element(By.XPATH, '//*[@id="QST"]/div/div/div[2]/center[2]')
+                                    current_xpaths = xpaths["4_choices_2x2"]
+                                except:
+                                    current_xpaths = xpaths["4_choices"]
                             elif num_choices == 3:
                                 current_xpaths = xpaths["3_choices"]
                             else:
@@ -422,14 +466,14 @@ try:
                             correct_indices = [i for i, reponse in enumerate(reponses) if reponse == '1']
                             
                             if correct_indices:
-                                print(f"Les bonnes réponses sont en position(s): {[i + 1 for i in correct_indices]}")
+                                # print(f"Les bonnes réponses sont en position(s): {[i + 1 for i in correct_indices]}")
                                 
                                 # Cliquer sur chaque bonne réponse
                                 for correct_index in correct_indices:
                                     try:
                                         element = driver.find_element(By.XPATH, current_xpaths[correct_index])
                                         element.click()
-                                        print(f"Cliqué sur: {current_xpaths[correct_index]}")
+                                        # print(f"Cliqué sur: {current_xpaths[correct_index]}")
                                         time.sleep(0.5)  # Petit délai entre les clics multiples
                                     except Exception as e:
                                         print(f"Erreur lors du clic sur la position {correct_index + 1}: {e}")
@@ -444,8 +488,15 @@ try:
             else:
                 print('Pas de fiches, passage à l\'évaluation...')
 
-            if evaluation != 0:
-                print(len(evaluation))
+            if len(evaluation) != 0:
+                driver.get(result[i])
+                time.sleep(2)
+                cookies = driver.get_cookies()
+                phpsessid_cookie = next((cookie for cookie in cookies if cookie['name'] == 'PHPSESSID'), None)
+                if phpsessid_cookie:
+                    print(f"Cookie: {phpsessid_cookie['name']}, Value: {phpsessid_cookie['value']}")
+
+                # print(len(evaluation), "évaluation")
                 if element_exists_and_click(driver, ".btn.btn-secondary"):
                     time.sleep(2)
                     #démarrer le test
@@ -455,7 +506,7 @@ try:
                     time.sleep(3)
                     
                     id_qst = driver.execute_script("return id_qst;")
-                    print(f"ID Question: {id_qst}")
+                    # print(f"ID Question: {id_qst}")
 
                     final_list = []
 
@@ -511,36 +562,33 @@ try:
                             print(f"Request failed with status code: {response.status_code}")
                             print("Response content:", response.text)
 
-                    print("\nListe finale avec réponses combinées:")
-                    print(final_list)
+                    # print("\nListe finale avec réponses combinées:")
+                    # print(final_list)
 
                     xpaths = {
                         "4_choices": [
-                            # '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[1]/div/div/div[1]',
-                            # '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[1]/div/div/div[2]',
-                            # '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[2]/div/div/div[1]',
-                            # '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center[2]/div/div/div[2]'
                             '//*[@id="QST"]/div/div/div[2]/center/div/div/div[1]',
                             '//*[@id="QST"]/div/div/div[2]/center/div/div/div[2]',
                             '//*[@id="QST"]/div/div/div[2]/center/div/div/div[3]',
                             '//*[@id="QST"]/div/div/div[2]/center/div/div/div[4]'
-
+                        ],
+                        "4_choices_2x2": [
+                            '//*[@id="QST"]/div/div/div[2]/center[1]/div/div/div[1]',
+                            '//*[@id="QST"]/div/div/div[2]/center[1]/div/div/div[2]',
+                            '//*[@id="QST"]/div/div/div[2]/center[2]/div/div/div[1]',
+                            '//*[@id="QST"]/div/div/div[2]/center[2]/div/div/div[2]'
                         ],
                         "3_choices": [
-                            # '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[1]',
-                            # '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[2]',
-                            # '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[3]'
                             '//*[@id="QST"]/div/div/div[2]/center/div/div/div[1]',
                             '//*[@id="QST"]/div/div/div[2]/center/div/div/div[2]',
                             '//*[@id="QST"]/div/div/div[2]/center/div/div/div[3]'
                         ],
                         "2_choices": [
-                            # '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[1]',
-                            # '/html/body/div[3]/div/div/div/div/div[2]/div/div[2]/div[1]/div/div/div[2]/center/div/div/div[2]'
                             '//*[@id="QST"]/div/div/div[2]/center/div/div/div[1]',
                             '//*[@id="QST"]/div/div/div[2]/center/div/div/div[2]'
                         ]
                     }
+
                     for c in range(10):
                         reponses = final_list[c]
                         num_choices = len(reponses)
@@ -548,7 +596,12 @@ try:
 
                         # Sélectionner la liste de XPaths appropriée
                         if num_choices == 4:
-                            current_xpaths = xpaths["4_choices"]
+                            # Vérifier si c'est un layout 2x2 en essayant de trouver un élément spécifique
+                            try:
+                                driver.find_element(By.XPATH, '//*[@id="QST"]/div/div/div[2]/center[2]')
+                                current_xpaths = xpaths["4_choices_2x2"]
+                            except:
+                                current_xpaths = xpaths["4_choices"]
                         elif num_choices == 3:
                             current_xpaths = xpaths["3_choices"]
                         else:
@@ -580,11 +633,5 @@ try:
             else:
                 print("Pas d'évaluation.")
 
-
-
-
-
 finally:
-    # Quit the driver
     driver.quit()
-# /html/body/div[1]/div/div/main/div/div[2]/div/div/div[1]/div[2]/div/div/div/div[2]/div[2]/div[2]/a
